@@ -7,12 +7,11 @@ import akka.actor.typed.{ ActorRef, Behavior }
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
+import com.calvin.walletapi.domain.WalletId
 
 import scala.collection.immutable.Queue
 
-object Account {
-  case class AccountId(id: String) extends AnyVal
-
+object Wallet {
   sealed trait Command[R <: Reply] extends CborSerializable {
     def replyTo: ActorRef[R]
   }
@@ -118,11 +117,12 @@ object Account {
   private def keepLatest[A](limit: Int)(queue: Queue[A]): Queue[A] =
     queue.takeRight(limit)
 
-  val TypeKey: EntityTypeKey[Command[Reply]] = EntityTypeKey[Command[Reply]]("Account")
+  val TypeKey: EntityTypeKey[Command[Reply]] = EntityTypeKey[Command[Reply]]("Wallet")
 
-  def create(historyLimit: Int)(accountId: AccountId, persistenceId: PersistenceId): Behavior[Command[Reply]] =
+  def create(historyLimit: Int)(walletId: WalletId, persistenceId: PersistenceId): Behavior[Command[Reply]] =
     Behaviors.setup { ctx =>
-      ctx.log.info(s"Starting Account ${accountId.id}")
+      ctx.log
+      ctx.log.info(s"Starting Wallet ${walletId.id}")
       EventSourcedBehavior(persistenceId, State.Uninitialized, commandHandler, eventHandler(historyLimit))
     }
 }

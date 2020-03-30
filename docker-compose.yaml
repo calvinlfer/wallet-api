@@ -1,0 +1,13 @@
+version: '2.1'
+
+services:
+  postgres:
+    image: postgres:10.7-alpine
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./local-data:/docker-entrypoint-initdb.d

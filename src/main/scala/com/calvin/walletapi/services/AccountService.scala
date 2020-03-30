@@ -2,18 +2,19 @@ package com.calvin.walletapi.services
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import com.calvin.walletapi.actors.Account._
+import com.calvin.walletapi.actors.Wallet._
+import com.calvin.walletapi.domain.WalletId
+import com.calvin.walletapi.services.Error._
 import com.calvin.walletapi.services.Response._
-import com.calvin.walletapi.services.ErrorResponse._
 import zio.Task
 
-sealed trait ErrorResponse
-object ErrorResponse {
-  type AccountNotCreated = AccountNotCreated.type
-  type AlreadyCreated    = AlreadyCreated.type
+sealed trait Error
+object Error {
+  type WalletNotCreated = WalletNotCreated.type
+  type AlreadyCreated   = AlreadyCreated.type
 
-  case object AlreadyCreated    extends ErrorResponse
-  case object AccountNotCreated extends ErrorResponse
+  case object AlreadyCreated   extends Error
+  case object WalletNotCreated extends Error
 }
 
 sealed trait Response
@@ -21,25 +22,28 @@ object Response {
   type SuccessfulCreation = SuccessfulCreation.type
 
   case object SuccessfulCreation                extends Response
+  case class Balance(amount: Long)              extends Response
   case class SuccessfulDeposit(amount: Long)    extends Response
   case class SuccessfulWithdrawal(amount: Long) extends Response
   case class History(events: List[Event])       extends Response
 }
 
-trait AccountService {
-  def create(accountId: AccountId): Task[Either[AlreadyCreated, SuccessfulCreation]]
+trait WalletService {
+  def create(walletId: WalletId): Task[Either[AlreadyCreated, SuccessfulCreation]]
 
   def deposit(
-    accountId: AccountId,
+    walletId: WalletId,
     amount: Long
-  ): Task[Either[AccountNotCreated, SuccessfulDeposit]]
+  ): Task[Either[WalletNotCreated, SuccessfulDeposit]]
 
   def withdraw(
-    accountId: AccountId,
+    walletId: WalletId,
     amount: Long
-  ): Task[Either[ErrorResponse, SuccessfulWithdrawal]]
+  ): Task[Either[Error, SuccessfulWithdrawal]]
 
-  def immediateHistory(accountId: AccountId): Task[Either[AccountNotCreated, History]]
+  def balance(walletId: WalletId): Task[Either[WalletNotCreated, Balance]]
 
-  def allHistory(accountId: AccountId): Task[Either[AccountNotCreated, Source[Event, NotUsed]]]
+  def immediateHistory(walletId: WalletId): Task[Either[WalletNotCreated, History]]
+
+  def allHistory(walletId: WalletId): Task[Either[WalletNotCreated, Source[Event, NotUsed]]]
 }
