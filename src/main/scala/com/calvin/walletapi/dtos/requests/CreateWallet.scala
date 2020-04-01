@@ -1,4 +1,4 @@
-package com.calvin.walletapi.dtos
+package com.calvin.walletapi.dtos.requests
 
 import com.calvin.walletapi.domain.WalletId
 import io.circe.Decoder

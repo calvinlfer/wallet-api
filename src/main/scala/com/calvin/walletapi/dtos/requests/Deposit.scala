@@ -1,4 +1,4 @@
-package com.calvin.walletapi.dtos
+package com.calvin.walletapi.dtos.requests
 
 import io.circe.Decoder
 

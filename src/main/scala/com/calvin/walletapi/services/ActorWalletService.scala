@@ -9,6 +9,7 @@ import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import com.calvin.walletapi.actors.Wallet
 import com.calvin.walletapi.actors.Wallet._
+import com.calvin.walletapi.domain.Fees.FeeType
 import com.calvin.walletapi.domain.WalletId
 import com.calvin.walletapi.services.Error._
 import com.calvin.walletapi.services.Response._
@@ -67,12 +68,15 @@ private class ActorWalletService(
     }
   }
 
-  override def deposit(walletId: WalletId, amount: Long): Task[Either[WalletNotCreated, SuccessfulDeposit]] = {
+  override def deposit(walletId: WalletId, amount: Long): Task[Either[Error, SuccessfulDeposit]] = {
     val ref         = refForId(walletId)
     val depositTask = Task.fromFuture(_ => ref ? Command.Deposit(amount))
     depositTask.flatMap {
       case Reply.DoesNotExist =>
         Task(Left(WalletNotCreated))
+
+      case Reply.InsufficientDepositAmount =>
+        Task(Left(InsufficientAmount))
 
       case Reply.SuccessfulDeposit =>
         Task(Right(SuccessfulDeposit(amount)))
@@ -89,11 +93,17 @@ private class ActorWalletService(
       case Reply.DoesNotExist =>
         Task(Left(WalletNotCreated))
 
+      case Reply.InsufficientWithdrawalAmount =>
+        Task(Left(InsufficientAmount))
+
+      case Reply.InsufficientFunds =>
+        Task(Left(WithdrawOverBalance))
+
       case Reply.SuccessfulWithdrawal =>
         Task(Right(SuccessfulWithdrawal(amount)))
 
       case invalidReply =>
-        Task.dieMessage(s"Expected the wallet to be created or a successful deposit but got $invalidReply")
+        Task.dieMessage(s"Expected the wallet to be created or a successful withdrawal but got $invalidReply")
     }
   }
 
@@ -130,6 +140,34 @@ private class ActorWalletService(
 
       case invalidReply =>
         Task.dieMessage(s"Expected the wallet to be created or the balance but got $invalidReply")
+    }
+  }
+
+  override def queryDepositFee(walletId: WalletId, amount: Long): Task[Either[WalletNotCreated, FeeReport]] =
+    queryFee(FeeType.Deposit)(walletId, amount)
+
+  override def queryWithdrawFee(walletId: WalletId, amount: Long): Task[Either[WalletNotCreated, FeeReport]] =
+    queryFee(FeeType.Withdraw)(walletId, amount)
+
+  private def queryFee(
+    query: FeeType
+  )(walletId: WalletId, amount: Long): Task[Either[WalletNotCreated, FeeReport]] = {
+    val command = query match {
+      case FeeType.Withdraw => Command.ViewWithdrawalFee(amount)(_)
+      case FeeType.Deposit  => Command.ViewDepositFee(amount)(_)
+    }
+
+    val ref     = refForId(walletId)
+    val feeTask = Task.fromFuture(_ => ref ? command)
+    feeTask.flatMap {
+      case Reply.DoesNotExist =>
+        Task(Left(WalletNotCreated))
+
+      case Reply.FeeBreakdown(percentage, fee) =>
+        Task(Right(FeeReport(percentage, fee)))
+
+      case invalidReply =>
+        Task.dieMessage(s"Expected the wallet to be created or the fee breakdown but got $invalidReply")
     }
   }
 }
