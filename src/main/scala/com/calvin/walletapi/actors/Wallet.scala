@@ -161,6 +161,13 @@ object Wallet {
   private def keepLatest[A](limit: Int)(queue: Queue[A]): Queue[A] =
     queue.takeRight(limit)
 
+  private def eventTagger: Event => Set[String] = {
+    case _: Event.Opened    => Set("open")
+    case _: Event.Deposited => Set("deposit")
+    case _: Event.Withdrawn => Set("withdraw")
+    case _: FeeSubtracted   => Set("fee")
+  }
+
   val TypeKey: EntityTypeKey[Command[Reply]] = EntityTypeKey[Command[Reply]]("Wallet")
 
   def create(historyLimit: Int)(walletId: WalletId, persistenceId: PersistenceId): Behavior[Command[Reply]] =
@@ -169,5 +176,6 @@ object Wallet {
       ctx.log.info(s"Starting Wallet ${walletId.id}")
       EventSourcedBehavior(persistenceId, State.Uninitialized, commandHandler, eventHandler(historyLimit))
         .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 50, keepNSnapshots = 2))
+        .withTagger(eventTagger)
     }
 }
