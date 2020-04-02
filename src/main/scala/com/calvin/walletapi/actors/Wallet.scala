@@ -7,7 +7,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
+import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, RetentionCriteria }
 import com.calvin.walletapi.actors.Wallet.Event.FeeSubtracted
 import com.calvin.walletapi.domain.Fees.{ FeeInfo, FeeType }
 import com.calvin.walletapi.domain.{ Fees, WalletId }
@@ -30,9 +30,9 @@ object Wallet {
 
   sealed trait Event extends CborSerializable
   object Event {
-    final case class Opened(date: ZonedDateTime)         extends Event
-    final case class Deposited(amount: Long, id: String) extends Event
-    final case class Withdrawn(amount: Long, id: String) extends Event
+    final case class Opened(date: ZonedDateTime)                    extends Event
+    final case class Deposited(amount: Long, id: String, fee: Long) extends Event
+    final case class Withdrawn(amount: Long, id: String, fee: Long) extends Event
     final case class FeeSubtracted(percentage: Double, feeAmount: Long, feeType: FeeType, relationId: String)
         extends Event
   }
@@ -86,7 +86,7 @@ object Wallet {
 
             Effect
               .persist(
-                Event.Deposited(amountMinusFee, depositId),
+                Event.Deposited(amountMinusFee, depositId, fee),
                 FeeSubtracted(percent, fee, FeeType.Deposit, depositId)
               )
               .thenReply(c.replyTo)(_ => Reply.SuccessfulDeposit)
@@ -100,7 +100,7 @@ object Wallet {
 
             Effect
               .persist(
-                Event.Withdrawn(amountMinusFee, withdrawalId),
+                Event.Withdrawn(amountMinusFee, withdrawalId, fee),
                 Event.FeeSubtracted(percent, fee, FeeType.Withdraw, withdrawalId)
               )
               .thenReply(c.replyTo)(_ => Reply.SuccessfulWithdrawal)
@@ -147,10 +147,10 @@ object Wallet {
           case _: Event.FeeSubtracted =>
             s
 
-          case d @ Event.Deposited(amount, _) =>
+          case d @ Event.Deposited(amount, _, _) =>
             s.copy(balance = balance + amount, history = keepLatest(historyLimit)(history.enqueue(d)))
 
-          case w @ Event.Withdrawn(amount, _) =>
+          case w @ Event.Withdrawn(amount, _, _) =>
             s.copy(balance = balance - amount, history = keepLatest(historyLimit)(history.enqueue(w)))
         }
     }
@@ -168,5 +168,6 @@ object Wallet {
       ctx.log
       ctx.log.info(s"Starting Wallet ${walletId.id}")
       EventSourcedBehavior(persistenceId, State.Uninitialized, commandHandler, eventHandler(historyLimit))
+        .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 50, keepNSnapshots = 2))
     }
 }

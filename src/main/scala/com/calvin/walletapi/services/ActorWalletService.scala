@@ -35,12 +35,12 @@ object ActorWalletService {
     val refForId: WalletId => EntityRef[Command[Reply]] =
       aId => sharding.entityRefFor(Wallet.TypeKey, aId.id)
 
-    val queryForId: WalletId => Source[Event, NotUsed] =
-      aId =>
-        readJournal
-          .currentEventsByPersistenceId(aId.id, 0L, Long.MaxValue)
-          .map(_.event)
-          .collectType[Event]
+    val queryForId: WalletId => Source[Event, NotUsed] = { aId =>
+      readJournal
+        .currentEventsByPersistenceId(s"${Wallet.TypeKey.name}|${aId.id}", 0L, Long.MaxValue)
+        .map(_.event)
+        .collectType[Event]
+    }
 
     implicit val timeout: Timeout = Timeout(timeoutDuration)
 

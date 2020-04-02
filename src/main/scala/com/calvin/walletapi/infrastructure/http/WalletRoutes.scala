@@ -1,9 +1,11 @@
 package com.calvin.walletapi.infrastructure.http
 
+import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.stream.scaladsl.Source
 import com.calvin.walletapi.domain.WalletId
 import com.calvin.walletapi.dtos.requests._
 import com.calvin.walletapi.dtos.responses._
@@ -23,9 +25,11 @@ object WalletRoutes {
 private class WalletRoutes(walletService: WalletService, log: Logger, runtime: zio.Runtime[Any])
     extends FailFastCirceSupport {
 
-  val routes: Route = pathPrefix("wallets")(createWallet ~ balance ~ deposit ~ withdraw)
+  val routes: Route = pathPrefix("wallets")(createWallet ~ balance ~ deposit ~ withdraw ~ history)
 
   private val WalletSegment = Segment.flatMap(rawId => WalletId.validate(rawId).toOption)
+
+  implicit val ess: EntityStreamingSupport = EntityStreamingSupport.json()
 
   private def createWallet: Route =
     post {
@@ -104,6 +108,24 @@ private class WalletRoutes(walletService: WalletService, log: Logger, runtime: z
       )
     }
 
+  private def history: Route = {
+    import io.circe.generic.auto._
+
+    get {
+      pathPrefix(WalletSegment / "history") { w =>
+        path("immediate") {
+          completeTask(walletService.immediateHistory(w))("immediate-history")(fail =
+            _ => BadRequest -> ErrorResponse("No wallet with that ID exists")
+          )(pass = history => OK -> history)
+        } ~ path("all") {
+          completeTaskSource(walletService.allHistory(w))("all-history")(fail =
+            _ => BadRequest -> ErrorResponse("No wallet with that ID exists")
+          )
+        }
+      }
+    }
+  }
+
   private def completeTask[A, A1: Encoder, B, B1: Encoder](
     task: Task[Either[A, B]]
   )(requestName: String)(fail: A => (StatusCode, A1))(pass: B => (StatusCode, B1)): Route = {
@@ -118,6 +140,23 @@ private class WalletRoutes(walletService: WalletService, log: Logger, runtime: z
 
       case Success(Right(b)) =>
         complete(pass(b))
+    }
+  }
+
+  private def completeTaskSource[A, A1: Encoder, B: Encoder](
+    task: Task[Either[A, Source[B, _]]]
+  )(requestName: String)(fail: A => (StatusCode, A1)): Route = {
+    val runningTask = runtime.unsafeRunToFuture(task)
+    onComplete(runningTask) {
+      case Failure(exception) =>
+        log.error(s"Failed to execute $requestName", exception)
+        complete(ServiceUnavailable -> ErrorResponse("Please try again later"))
+
+      case Success(Left(a)) =>
+        complete(fail(a))
+
+      case Success(Right(b)) =>
+        complete(b)
     }
   }
 }
