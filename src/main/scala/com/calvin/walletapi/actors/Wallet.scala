@@ -16,7 +16,7 @@ import com.calvin.walletapi.infrastructure.serialization.CborSerializable
 import scala.collection.immutable.Queue
 
 object Wallet {
-  sealed trait Command[R <: Reply] extends CborSerializable {
+  sealed trait Command[R <: Reply] {
     def replyTo: ActorRef[R]
   }
   object Command {
