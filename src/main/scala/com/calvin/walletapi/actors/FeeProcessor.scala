@@ -16,13 +16,17 @@ import zio.Task
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
+/**
+ * The FreeProcessor is responsible for populating the processor table: 'fee' row
+ * This uses a persistence query to read from the journal whose events are tagged with 'fee'
+ */
 object FeeProcessor {
-  sealed trait Protocol
-  object Protocol {
-    case object SearchingForOffset                 extends Protocol
-    case class Begin(offset: Long)                 extends Protocol
-    private[FeeProcessor] case object BeginStop    extends Protocol
-    private[FeeProcessor] case object FinishedStop extends Protocol
+  private[FeeProcessor] sealed trait Protocol
+  private[FeeProcessor] object Protocol {
+    case object SearchingForOffset extends Protocol
+    case class Begin(offset: Long) extends Protocol
+    case object BeginStop          extends Protocol
+    case object FinishedStop       extends Protocol
   }
 
   private def updateGraph(
