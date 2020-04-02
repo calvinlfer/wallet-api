@@ -8,6 +8,7 @@ import akka.http.scaladsl.server.Route
 import akka.stream.scaladsl.Source
 import com.calvin.walletapi.domain.WalletId
 import com.calvin.walletapi.dtos.requests._
+import com.calvin.walletapi.dtos.responses.ErrorResponse._
 import com.calvin.walletapi.dtos.responses._
 import com.calvin.walletapi.services.{ Error, WalletService }
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
@@ -36,7 +37,7 @@ private class WalletRoutes(walletService: WalletService, log: Logger, runtime: z
       pathEndOrSingleSlash {
         entity(as[CreateWallet]) { createWallet =>
           completeTask(walletService.create(createWallet.id))("create-wallet")(
-            fail = _ => BadRequest -> ErrorResponse("Wallet with that ID already exists")
+            fail = _ => BadRequest -> walletAlreadyExists
           )(pass = _ => Created -> WalletCreated(createWallet.id))
         }
       }
@@ -46,7 +47,7 @@ private class WalletRoutes(walletService: WalletService, log: Logger, runtime: z
     get {
       pathPrefix(WalletSegment / "balance") { walletId =>
         completeTask(walletService.balance(walletId))("get-balance")(
-          fail = _ => BadRequest -> ErrorResponse("No wallet with that ID exists")
+          fail = _ => BadRequest -> noWallet
         )(pass = b => OK -> Balance(walletId, b.amount))
       }
     }
@@ -59,18 +60,18 @@ private class WalletRoutes(walletService: WalletService, log: Logger, runtime: z
             completeTask(walletService.deposit(walletId, d.amount))("deposit")(
               fail = {
                 case Error.WalletNotCreated =>
-                  BadRequest -> ErrorResponse("No wallet with that ID exists")
+                  BadRequest -> noWallet
                 case Error.InsufficientAmount =>
-                  BadRequest -> ErrorResponse("Your deposit amount is too small")
+                  BadRequest -> depositTooSmall
                 case other =>
                   log.error(s"Deposits should never result in $other")
-                  BadRequest -> ErrorResponse("Unexpected error")
+                  BadRequest -> unexpected
               }
             )(pass = b => OK -> Deposited(walletId, b.amount))
           } ~
             path("depositFee") {
               completeTask(walletService.queryDepositFee(walletId, d.amount))("depositFee")(
-                fail = _ => BadRequest -> ErrorResponse("No wallet with that ID exists")
+                fail = _ => BadRequest -> noWallet
               )(pass = b => OK -> FeeBreakdown(b.percentage, b.fee))
             }
         }
@@ -85,23 +86,23 @@ private class WalletRoutes(walletService: WalletService, log: Logger, runtime: z
             completeTask(walletService.withdraw(walletId, d.amount))("withdraw")(
               fail = {
                 case Error.WalletNotCreated =>
-                  BadRequest -> ErrorResponse("No wallet with that ID exists")
+                  BadRequest -> noWallet
 
                 case Error.InsufficientAmount =>
-                  BadRequest -> ErrorResponse("Your withdrawal amount is too small")
+                  BadRequest -> withdrawalTooSmall
 
                 case Error.WithdrawOverBalance =>
-                  BadRequest -> ErrorResponse("Not enough balance to withdraw specified amount")
+                  BadRequest -> withdrewTooMuch
 
                 case other =>
                   log.error(s"Deposits should never result in $other")
-                  BadRequest -> ErrorResponse("Unexpected error")
+                  BadRequest -> unexpected
               }
             )(pass = b => OK -> Deposited(walletId, b.amount))
           } ~
             path("withdrawFee") {
               completeTask(walletService.queryWithdrawFee(walletId, d.amount))("withdrawFee")(
-                fail = _ => BadRequest -> ErrorResponse("No wallet with that ID exists")
+                fail = _ => BadRequest -> noWallet
               )(pass = b => OK -> FeeBreakdown(b.percentage, b.fee))
             }
         }
@@ -109,18 +110,17 @@ private class WalletRoutes(walletService: WalletService, log: Logger, runtime: z
     }
 
   private def history: Route = {
+    // TODO: Don't use automatic derivation
     import io.circe.generic.auto._
 
     get {
       pathPrefix(WalletSegment / "history") { w =>
         path("immediate") {
-          completeTask(walletService.immediateHistory(w))("immediate-history")(fail =
-            _ => BadRequest -> ErrorResponse("No wallet with that ID exists")
-          )(pass = history => OK -> history)
-        } ~ path("all") {
-          completeTaskSource(walletService.allHistory(w))("all-history")(fail =
-            _ => BadRequest -> ErrorResponse("No wallet with that ID exists")
+          completeTask(walletService.immediateHistory(w))("immediate-history")(fail = _ => BadRequest -> noWallet)(
+            pass = history => OK -> history
           )
+        } ~ path("all") {
+          completeTaskSource(walletService.allHistory(w))("all-history")(fail = _ => BadRequest -> noWallet)
         }
       }
     }
@@ -133,7 +133,7 @@ private class WalletRoutes(walletService: WalletService, log: Logger, runtime: z
     onComplete(runningTask) {
       case Failure(exception) =>
         log.error(s"Failed to execute $requestName", exception)
-        complete(ServiceUnavailable -> ErrorResponse("Please try again later"))
+        complete(ServiceUnavailable -> unavailable)
 
       case Success(Left(a)) =>
         complete(fail(a))
@@ -150,7 +150,7 @@ private class WalletRoutes(walletService: WalletService, log: Logger, runtime: z
     onComplete(runningTask) {
       case Failure(exception) =>
         log.error(s"Failed to execute $requestName", exception)
-        complete(ServiceUnavailable -> ErrorResponse("Please try again later"))
+        complete(ServiceUnavailable -> unavailable)
 
       case Success(Left(a)) =>
         complete(fail(a))

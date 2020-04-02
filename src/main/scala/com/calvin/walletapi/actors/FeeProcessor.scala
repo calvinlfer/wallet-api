@@ -21,7 +21,7 @@ object FeeProcessor {
   object Protocol {
     case object SearchingForOffset                 extends Protocol
     case class Begin(offset: Long)                 extends Protocol
-    case object BeginStop                          extends Protocol
+    private[FeeProcessor] case object BeginStop    extends Protocol
     private[FeeProcessor] case object FinishedStop extends Protocol
   }
 
@@ -122,6 +122,6 @@ object FeeProcessor {
           SupervisorStrategy.restartWithBackoff(minBackoff = 1.second, maxBackoff = 30.seconds, randomFactor = 0.1)
         ),
       "GlobalFeeProcessor"
-    ).withStopMessage(Protocol.FinishedStop)
+    ).withStopMessage(Protocol.BeginStop)
 
 }

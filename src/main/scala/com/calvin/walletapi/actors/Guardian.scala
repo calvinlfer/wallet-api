@@ -17,7 +17,7 @@ object Guardian {
 
     // wallet
     val walletService =
-      ActorWalletService.create(ctx.system, config.walletService.timeout, config.walletService.historyLimit)
+      ActorWalletService.make(ctx.system, config.walletService.timeout, config.walletService.historyLimit)
 
     // http
     if (config.http.enabled) {

@@ -175,7 +175,7 @@ object Wallet {
     Behaviors.setup { ctx =>
       ctx.log.info(s"Starting Wallet ${walletId.id}")
       EventSourcedBehavior(persistenceId, State.Uninitialized, commandHandler, eventHandler(historyLimit))
-        .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 50, keepNSnapshots = 2))
+        .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 10, keepNSnapshots = 2))
         .withTagger(eventTagger)
     }
 }
