@@ -1,10 +1,10 @@
-package com.calvin.walletapi.infrastructure
+package com.calvin.walletapi.actors
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.typed.ClusterSingleton
-import com.calvin.walletapi.actors.FeeProcessor
 import com.calvin.walletapi.infrastructure.http.{ WalletRoutes, WalletServer }
+import com.calvin.walletapi.infrastructure.{ Configuration, FlywayMigrations }
 import com.calvin.walletapi.services.ActorWalletService
 
 object Guardian {

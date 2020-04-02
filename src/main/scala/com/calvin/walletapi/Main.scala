@@ -1,7 +1,7 @@
 package com.calvin.walletapi
 
-import com.calvin.walletapi.infrastructure.Guardian
 import akka.actor.typed.scaladsl.adapter._
+import com.calvin.walletapi.actors.Guardian
 
 object Main {
   def main(args: Array[String]): Unit = {
