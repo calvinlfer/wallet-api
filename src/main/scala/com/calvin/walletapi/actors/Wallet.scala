@@ -11,6 +11,7 @@ import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, Retention
 import com.calvin.walletapi.actors.Wallet.Event.FeeSubtracted
 import com.calvin.walletapi.domain.Fees.{ FeeInfo, FeeType }
 import com.calvin.walletapi.domain.{ Fees, WalletId }
+import com.calvin.walletapi.infrastructure.serialization.CborSerializable
 
 import scala.collection.immutable.Queue
 
@@ -37,7 +38,7 @@ object Wallet {
         extends Event
   }
 
-  sealed trait Reply extends CborSerializable
+  sealed trait Reply
   object Reply {
     final case object DoesNotExist                               extends Reply
     final case class Opened(already: Boolean)                    extends Reply

@@ -12,9 +12,12 @@ object Guardian {
     val runtime = zio.Runtime.default
     val walletService =
       ActorWalletService.create(ctx.system, config.walletService.timeout, config.walletService.historyLimit)
-    val routes = WalletRoutes.create(walletService, ctx.log, runtime)
 
-    WalletServer.start(ctx.system, routes, config.http.port)
+    if (config.http.enabled) {
+      val routes = WalletRoutes.create(walletService, ctx.log, runtime)
+      WalletServer.start(ctx.system, routes, config.http.port)
+    } else ()
+
     Behaviors.empty
   }
 }

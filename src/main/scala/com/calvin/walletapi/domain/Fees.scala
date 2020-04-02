@@ -1,10 +1,7 @@
 package com.calvin.walletapi.domain
 
-import com.fasterxml.jackson.core.{ JsonGenerator, JsonParser }
-import com.fasterxml.jackson.databind.{ DeserializationContext, SerializerProvider }
-import com.fasterxml.jackson.databind.annotation.{ JsonDeserialize, JsonSerialize }
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer
-import com.fasterxml.jackson.databind.ser.std.StdSerializer
+import com.calvin.walletapi.infrastructure.serialization.FeeTypeSerialization._
+import com.fasterxml.jackson.databind.annotation._
 
 import scala.collection.SortedMap
 
@@ -64,22 +61,4 @@ object Fees {
     400000L       -> 0.03,
     Long.MaxValue -> 0.01
   )
-
-  class FeeTypeJsonSerializer extends StdSerializer[FeeType](classOf[FeeType]) {
-    override def serialize(value: FeeType, gen: JsonGenerator, provider: SerializerProvider): Unit = {
-      val string = value match {
-        case FeeType.Withdraw => "w"
-        case FeeType.Deposit  => "d"
-      }
-      gen.writeString(string)
-    }
-  }
-
-  class FeeTypeJsonDeserializer extends StdDeserializer[FeeType](classOf[FeeType]) {
-    override def deserialize(p: JsonParser, ctxt: DeserializationContext): FeeType =
-      p.getText match {
-        case "w" => FeeType.Withdraw
-        case "d" => FeeType.Deposit
-      }
-  }
 }
