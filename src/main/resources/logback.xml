@@ -14,6 +14,7 @@
     <logger name="slick" level="WARN"/>
     <logger name="slick.jdbc.JdbcBackend.statement" level="DEBUG" />
     <logger name="slick.jdbc.JdbcBackend.parameter" level="DEBUG" />
+    <logger name="com.calvin.walletapi" level="DEBUG" />
 
     <root level="INFO">
         <appender-ref ref="ASYNC_CONSOLE" />

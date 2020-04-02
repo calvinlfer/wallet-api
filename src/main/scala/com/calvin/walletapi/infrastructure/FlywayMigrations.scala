@@ -3,7 +3,7 @@ package com.calvin.walletapi.infrastructure
 import org.flywaydb.core.Flyway
 
 object FlywayMigrations {
-  def runMigrations(config: DatabaseConfig): Unit =
+  def runMigrations(config: DbConfig): Unit =
     Flyway
       .configure()
       .locations("classpath:migrations")

@@ -12,6 +12,6 @@ object Configuration {
 
 case class HttpConfig(port: Int, enabled: Boolean)
 case class WalletServiceConfig(timeout: FiniteDuration, historyLimit: Int)
-case class SlickConfig(db: DatabaseConfig)
-case class DatabaseConfig(url: String, user: String, password: String)
+case class SlickConfig(db: DbConfig)
+case class DbConfig(url: String, user: String, password: String)
 case class Configuration(http: HttpConfig, walletService: WalletServiceConfig, slick: SlickConfig)

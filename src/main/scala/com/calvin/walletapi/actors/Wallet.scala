@@ -173,7 +173,6 @@ object Wallet {
 
   def create(historyLimit: Int)(walletId: WalletId, persistenceId: PersistenceId): Behavior[Command[Reply]] =
     Behaviors.setup { ctx =>
-      ctx.log
       ctx.log.info(s"Starting Wallet ${walletId.id}")
       EventSourcedBehavior(persistenceId, State.Uninitialized, commandHandler, eventHandler(historyLimit))
         .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 50, keepNSnapshots = 2))
