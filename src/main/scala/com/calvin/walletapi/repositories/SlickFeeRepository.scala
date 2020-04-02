@@ -20,10 +20,12 @@ private class SlickFeeRepository(config: DatabaseConfig[JdbcProfile]) extends Fe
 
   override def save(f: FeeUpdate): Task[Unit] = {
     val update = sql"""
-    UPDATE processor
-    SET amount = amount + ${f.feeAmount}, sequence_number = ${f.sequenceNumber}
-    WHERE calculation_name = 'fee'
-    AND sequence_number < ${f.sequenceNumber}
+    INSERT INTO processor AS existing (sequence_number, amount, calculation_name)
+    VALUES (${f.sequenceNumber}, ${f.feeAmount}, 'fee')
+    ON CONFLICT (calculation_name) 
+    DO UPDATE 
+    SET amount = EXCLUDED.amount + existing.amount, sequence_number = EXCLUDED.sequence_number
+    WHERE EXCLUDED.sequence_number > existing.sequence_number
     """.asUpdate
 
     Task.fromFuture(_ => db.run(update)).unit
