@@ -70,7 +70,7 @@ private class ActorWalletService(
     routeMessage(walletId, Command.ViewImmediateHistory).flatMap(immediateHistoryReply)
 
   override def allHistory(walletId: WalletId): Task[Either[WalletNotCreated, Source[Wallet.Event, NotUsed]]] =
-    immediateHistory(walletId).map {
+    balance(walletId).map {
       case Left(value) => Left(value)
       case Right(_)    => Right(eventsForId(walletId))
     }
@@ -102,8 +102,8 @@ private class ActorWalletService(
     case Reply.InsufficientDepositAmount =>
       Task(Left(InsufficientAmount))
 
-    case Reply.SuccessfulDeposit =>
-      Task(Right(SuccessfulDeposit(amount)))
+    case Reply.SuccessfulDeposit(fee) =>
+      Task(Right(SuccessfulDeposit(amount, fee)))
 
     case invalidReply =>
       Task.dieMessage(s"Expected the wallet to be created or a successful deposit but got $invalidReply")
@@ -119,8 +119,8 @@ private class ActorWalletService(
     case Reply.InsufficientFunds =>
       Task(Left(WithdrawOverBalance))
 
-    case Reply.SuccessfulWithdrawal =>
-      Task(Right(SuccessfulWithdrawal(amount)))
+    case Reply.SuccessfulWithdrawal(fee) =>
+      Task(Right(SuccessfulWithdrawal(amount, fee)))
 
     case invalidReply =>
       Task.dieMessage(s"Expected the wallet to be created or a successful withdrawal but got $invalidReply")

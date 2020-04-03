@@ -67,7 +67,7 @@ private class WalletRoutes(walletService: WalletService, log: Logger, runtime: z
                   log.error(s"Deposits should never result in $other")
                   BadRequest -> unexpected
               }
-            )(pass = b => OK -> Deposited(walletId, b.amount))
+            )(pass = b => OK -> Deposited(walletId, b.amount, b.feeAppliedToBalance))
           } ~
             path("depositFee") {
               completeTask(walletService.queryDepositFee(walletId, d.amount))("depositFee")(
@@ -98,7 +98,7 @@ private class WalletRoutes(walletService: WalletService, log: Logger, runtime: z
                   log.error(s"Deposits should never result in $other")
                   BadRequest -> unexpected
               }
-            )(pass = b => OK -> Deposited(walletId, b.amount))
+            )(pass = b => OK -> Withdrawn(walletId, b.amount, b.feeAppliedToBalance))
           } ~
             path("withdrawFee") {
               completeTask(walletService.queryWithdrawFee(walletId, d.amount))("withdrawFee")(

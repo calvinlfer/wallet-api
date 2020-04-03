@@ -24,12 +24,12 @@ sealed trait Response
 object Response {
   type SuccessfulCreation = SuccessfulCreation.type
 
-  case object SuccessfulCreation                      extends Response
-  case class Balance(amount: Long)                    extends Response
-  case class SuccessfulDeposit(amount: Long)          extends Response
-  case class SuccessfulWithdrawal(amount: Long)       extends Response
-  case class History(events: List[Event])             extends Response
-  case class FeeReport(percentage: Double, fee: Long) extends Response
+  case object SuccessfulCreation                                           extends Response
+  case class Balance(amount: Long)                                         extends Response
+  case class SuccessfulDeposit(amount: Long, feeAppliedToBalance: Long)    extends Response
+  case class SuccessfulWithdrawal(amount: Long, feeAppliedToBalance: Long) extends Response
+  case class History(events: List[Event])                                  extends Response
+  case class FeeReport(percentage: Double, fee: Long)                      extends Response
 }
 
 trait WalletService {

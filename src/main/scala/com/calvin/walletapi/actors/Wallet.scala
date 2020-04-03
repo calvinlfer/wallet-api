@@ -45,8 +45,8 @@ object Wallet {
     final case object InsufficientFunds                          extends Reply
     final case object InsufficientDepositAmount                  extends Reply
     final case object InsufficientWithdrawalAmount               extends Reply
-    final case object SuccessfulDeposit                          extends Reply
-    final case object SuccessfulWithdrawal                       extends Reply
+    final case class SuccessfulDeposit(fee: Long)                extends Reply
+    final case class SuccessfulWithdrawal(fee: Long)             extends Reply
     final case class CurrentBalance(amount: Long)                extends Reply
     final case class FeeBreakdown(percentage: Double, fee: Long) extends Reply
     final case class ImmediateHistory(events: List[Event])       extends Reply
@@ -59,7 +59,7 @@ object Wallet {
   }
 
   // 1 dollar or 100 cents is the minimum amount we will allow so the fee structure works nicely
-  private val MinTransactionAmount = 100L
+  val MinTransactionAmount = 100L
 
   private val commandHandler: (State, Command[Reply]) => Effect[Event, State] = { (state, command) =>
     state match {
@@ -90,27 +90,27 @@ object Wallet {
                 Event.Deposited(amountMinusFee, depositId, fee),
                 FeeSubtracted(percent, fee, FeeType.Deposit, depositId)
               )
-              .thenReply(c.replyTo)(_ => Reply.SuccessfulDeposit)
+              .thenReply(c.replyTo)(_ => Reply.SuccessfulDeposit(fee))
 
           case c @ Command.Deposit(_) =>
             Effect.reply(c.replyTo)(Reply.InsufficientDepositAmount)
 
-          case c @ Command.Withdraw(amount) if balance >= amount && amount >= MinTransactionAmount =>
-            val FeeInfo(percent, fee, amountMinusFee) = Fees.calculateFee(FeeType.Withdraw)(balance, amount)
-            val withdrawalId                          = generateId()
-
-            Effect
-              .persist(
-                Event.Withdrawn(amountMinusFee, withdrawalId, fee),
-                Event.FeeSubtracted(percent, fee, FeeType.Withdraw, withdrawalId)
-              )
-              .thenReply(c.replyTo)(_ => Reply.SuccessfulWithdrawal)
-
-          case c @ Command.Withdraw(amount) if amount < MinTransactionAmount =>
-            Effect.reply(c.replyTo)(Reply.InsufficientWithdrawalAmount)
+          case c @ Command.Withdraw(amount) if amount >= MinTransactionAmount =>
+            val FeeInfo(percent, fee, _) = Fees.calculateFee(FeeType.Withdraw)(balance, amount)
+            val withdrawalId             = generateId()
+            val withdrawAmountWithFee    = amount + fee
+            if (balance >= withdrawAmountWithFee)
+              Effect
+                .persist(
+                  Event.Withdrawn(amount, withdrawalId, fee),
+                  Event.FeeSubtracted(percent, fee, FeeType.Withdraw, withdrawalId)
+                )
+                .thenReply(c.replyTo)(_ => Reply.SuccessfulWithdrawal(fee))
+            else
+              Effect.reply(c.replyTo)(Reply.InsufficientFunds)
 
           case c @ Command.Withdraw(_) =>
-            Effect.reply(c.replyTo)(Reply.InsufficientFunds)
+            Effect.reply(c.replyTo)(Reply.InsufficientWithdrawalAmount)
 
           case Command.ViewBalance(replyTo) =>
             Effect.reply(replyTo)(Reply.CurrentBalance(balance))
@@ -151,8 +151,8 @@ object Wallet {
           case d @ Event.Deposited(amount, _, _) =>
             s.copy(balance = balance + amount, history = keepLatest(historyLimit)(history.enqueue(d)))
 
-          case w @ Event.Withdrawn(amount, _, _) =>
-            s.copy(balance = balance - amount, history = keepLatest(historyLimit)(history.enqueue(w)))
+          case w @ Event.Withdrawn(amount, _, fee) =>
+            s.copy(balance = balance - amount - fee, history = keepLatest(historyLimit)(history.enqueue(w)))
         }
     }
   }

@@ -63,6 +63,8 @@ libraryDependencies ++= {
     "dev.zio"               %% "zio"                         % "1.0.0-RC18-2",
     "ch.qos.logback"        % "logback-classic"              % "1.2.3",
     "org.postgresql"        % "postgresql"                   % "42.2.11",
-    "org.flywaydb"          % "flyway-core"                  % "6.3.2"
+    "org.flywaydb"          % "flyway-core"                  % "6.3.2",
+    "com.typesafe.akka"     %% "akka-actor-testkit-typed"    % akkaV % Test,
+    "org.scalatest"         %% "scalatest"                   % "3.1.1" % Test
   )
 }
