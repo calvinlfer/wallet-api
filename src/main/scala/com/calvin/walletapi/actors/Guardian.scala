@@ -3,7 +3,7 @@ package com.calvin.walletapi.actors
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.typed.ClusterSingleton
-import com.calvin.walletapi.infrastructure.http.{ WalletRoutes, WalletServer }
+import com.calvin.walletapi.infrastructure.http.{ HttpServer, WalletRoutes }
 import com.calvin.walletapi.infrastructure.{ Configuration, FlywayMigrations }
 import com.calvin.walletapi.services.ActorWalletService
 
@@ -22,7 +22,7 @@ object Guardian {
     // http
     if (config.http.enabled) {
       val routes = WalletRoutes.create(walletService, ctx.log, runtime)
-      WalletServer.start(ctx.system, routes, config.http.port)
+      HttpServer.start(ctx.system, routes, config.http.port)
     } else ()
 
     // fee persistence query

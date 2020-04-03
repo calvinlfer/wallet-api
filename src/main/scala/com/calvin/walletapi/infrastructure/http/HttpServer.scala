@@ -9,7 +9,7 @@ import akka.http.scaladsl.server.Route
 import scala.util.{ Failure, Success }
 import scala.concurrent.duration._
 
-object WalletServer {
+object HttpServer {
   def start(system: ActorSystem[_], routes: Route, port: Int): Unit = {
     import akka.actor.typed.scaladsl.adapter._
     implicit val classicSystem: actor.ActorSystem = system.toClassic
@@ -24,7 +24,7 @@ object WalletServer {
       case Success(binding) =>
         val address = binding.localAddress
         system.log.info(
-          "WeatherServer online at http://{}:{}/",
+          "HTTP Server online at http://{}:{}/",
           address.getHostString,
           address.getPort
         )
@@ -35,7 +35,7 @@ object WalletServer {
         ) { () =>
           binding.terminate(10.seconds).map { _ =>
             system.log.info(
-              "WeatherServer http://{}:{}/ graceful shutdown completed",
+              "HTTP Server http://{}:{}/ graceful shutdown completed",
               address.getHostString,
               address.getPort
             )

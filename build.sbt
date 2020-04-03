@@ -65,6 +65,7 @@ libraryDependencies ++= {
     "org.postgresql"        % "postgresql"                   % "42.2.11",
     "org.flywaydb"          % "flyway-core"                  % "6.3.2",
     "com.typesafe.akka"     %% "akka-actor-testkit-typed"    % akkaV % Test,
-    "org.scalatest"         %% "scalatest"                   % "3.1.1" % Test
+    "org.scalatest"         %% "scalatest"                   % "3.1.1" % Test,
+    "org.scalatestplus"     %% "scalacheck-1-14"             % "3.1.0.0" % Test
   )
 }

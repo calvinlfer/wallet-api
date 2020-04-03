@@ -7,7 +7,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, RetentionCriteria }
+import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplyEffect, RetentionCriteria }
 import com.calvin.walletapi.actors.Wallet.Event.FeeSubtracted
 import com.calvin.walletapi.domain.Fees.{ FeeInfo, FeeType }
 import com.calvin.walletapi.domain.{ Fees, WalletId }
@@ -61,7 +61,7 @@ object Wallet {
   // 1 dollar or 100 cents is the minimum amount we will allow so the fee structure works nicely
   val MinTransactionAmount = 100L
 
-  private val commandHandler: (State, Command[Reply]) => Effect[Event, State] = { (state, command) =>
+  private val commandHandler: (State, Command[Reply]) => ReplyEffect[Event, State] = { (state, command) =>
     state match {
       case State.Uninitialized =>
         command match {
@@ -174,7 +174,8 @@ object Wallet {
   def create(historyLimit: Int)(walletId: WalletId, persistenceId: PersistenceId): Behavior[Command[Reply]] =
     Behaviors.setup { ctx =>
       ctx.log.info(s"Starting Wallet ${walletId.id}")
-      EventSourcedBehavior(persistenceId, State.Uninitialized, commandHandler, eventHandler(historyLimit))
+      EventSourcedBehavior
+        .withEnforcedReplies(persistenceId, State.Uninitialized, commandHandler, eventHandler(historyLimit))
         .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 10, keepNSnapshots = 2))
         .withTagger(eventTagger)
     }

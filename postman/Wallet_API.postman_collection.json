@@ -1,0 +1,227 @@
+{
+	"info": {
+		"_postman_id": "040b1442-b65a-4626-b64d-6cc377e4124c",
+		"name": "Wallet API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create a wallet",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \n\t\"id\": \"abc\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9001/wallets",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"wallets"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get wallet balance",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \n\t\"amount\": 10\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9001/wallets/abc/balance",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"wallets",
+						"abc",
+						"balance"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Deposit money in wallet",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \n\t\"amount\": 100\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9001/wallets/abc/deposit",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"wallets",
+						"abc",
+						"deposit"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Withdraw money from wallet",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \n\t\"amount\": 2000\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9001/wallets/abcd/withdraw",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"wallets",
+						"abcd",
+						"withdraw"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Query for deposit fee",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \n\t\"amount\": 100\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9001/wallets/abc/depositFee",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"wallets",
+						"abc",
+						"depositFee"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Query for withdrawal fee",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \n\t\"amount\": 2000\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9001/wallets/abcd/withdrawFee",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"wallets",
+						"abcd",
+						"withdrawFee"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get all history",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:9001/wallets/abc/history/all",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"wallets",
+						"abc",
+						"history",
+						"all"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get immediate history",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:9001/wallets/abc/history/immediate",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"wallets",
+						"abc",
+						"history",
+						"immediate"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}

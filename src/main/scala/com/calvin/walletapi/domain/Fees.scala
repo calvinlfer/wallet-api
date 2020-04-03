@@ -2,6 +2,7 @@ package com.calvin.walletapi.domain
 
 import com.calvin.walletapi.infrastructure.serialization.FeeTypeSerialization._
 import com.fasterxml.jackson.databind.annotation._
+import io.circe.{ Encoder, Json }
 
 import scala.collection.SortedMap
 
@@ -12,15 +13,21 @@ object Fees {
   object FeeType {
     case object Withdraw extends FeeType
     case object Deposit  extends FeeType
+
+    // Circe is used for historical REST API endpoints
+    implicit val encoder: Encoder[FeeType] = {
+      case FeeType.Deposit  => Json.fromString("DEPOSIT-FEE")
+      case FeeType.Withdraw => Json.fromString("WITHDRAWAL-FEE")
+    }
   }
 
   case class FeeInfo(percentage: Double, fee: Long, amountMinusFee: Long)
 
-  def calculateFee(feeType: FeeType)(existingBalance: Long, amountAdded: Long): FeeInfo = {
+  def calculateFee(feeType: FeeType)(existingBalance: Long, incomingAmount: Long): FeeInfo = {
     val structure  = feeStructure(feeType)
     val percentage = structure.rangeFrom(existingBalance).head._2
-    val fee        = math.floor(amountAdded * percentage).toLong
-    FeeInfo(percentage, fee, amountAdded - fee)
+    val fee        = math.floor(incomingAmount * percentage).toLong
+    FeeInfo(percentage, fee, incomingAmount - fee)
   }
 
   private def feeStructure(feeType: FeeType): FeeStructure =
